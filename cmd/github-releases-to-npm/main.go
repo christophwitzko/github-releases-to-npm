@@ -171,10 +171,10 @@ func mustReadConfig(cmd *cobra.Command) *RunConfig {
 	var rc RunConfig
 	configData, err := os.ReadFile(configFile)
 	if err != nil {
-		log.Fatalf("reading config file %s: %v", configFile, err)
+		log.Fatalf("error while reading config file %s: %v", configFile, err)
 	}
 	if err := json.Unmarshal(configData, &rc); err != nil {
-		panic(err)
+		log.Fatalf("error while parsing config file %s: %v", configFile, err)
 	}
 	rc.tag, _ = cmd.Flags().GetString("tag")
 	rc.publish, _ = cmd.Flags().GetBool("publish")
@@ -183,7 +183,7 @@ func mustReadConfig(cmd *cobra.Command) *RunConfig {
 
 func run(cmd *cobra.Command, args []string) {
 	if err := runWithConfig(mustReadConfig(cmd)); err != nil {
-		log.Fatalf("error: %s", err.Error())
+		log.Fatalf("run error: %s", err.Error())
 	}
 }
 
