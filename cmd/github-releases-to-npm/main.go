@@ -17,6 +17,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var VERSION string
+
 var ghClient *github.Client
 
 func init() {
@@ -189,13 +191,15 @@ func run(cmd *cobra.Command, args []string) {
 
 func main() {
 	var cmd = &cobra.Command{
-		Use: "github-releases-to-npm",
-		Run: run,
+		Use:     "github-releases-to-npm",
+		Run:     run,
+		Version: VERSION,
 	}
 
 	cmd.Flags().String("tag", "", "specify release tag")
 	cmd.Flags().StringP("config", "c", "", "config file")
 	cmd.Flags().Bool("publish", false, "run npm publish")
+	cmd.Flags().SortFlags = true
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatalf("error: %s", err.Error())
