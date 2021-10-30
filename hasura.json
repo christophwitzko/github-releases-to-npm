@@ -1,0 +1,7 @@
+{
+  "Owner": "hasura",
+  "Repo": "graphql-engine",
+  "Name": "hasura",
+  "License": "Apache-2.0",
+  "Homepage": "https://hasura.io/docs/latest/graphql/core/hasura-cli/index.html"
+}
