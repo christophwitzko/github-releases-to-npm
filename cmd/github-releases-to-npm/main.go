@@ -1,12 +1,17 @@
 package main
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
+	"path"
+	"regexp"
 	"strings"
 	"time"
 
@@ -87,8 +92,49 @@ type RunConfig struct {
 	publish                 bool
 }
 
+func extractFileFromTar(rc *RunConfig, inputFile, outputFile string) error {
+	compressedFile, err := os.Open(inputFile)
+	if err != nil {
+		return err
+	}
+	defer compressedFile.Close()
+	decompressedFile, err := gzip.NewReader(compressedFile)
+	if err != nil {
+		return err
+	}
+	tarReader := tar.NewReader(decompressedFile)
+	extacted := false
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			if extacted {
+				return nil
+			}
+			return fmt.Errorf("could not extract file")
+		}
+		if err != nil {
+			return err
+		}
+		if header.Typeflag == tar.TypeReg && strings.HasPrefix(header.Name, rc.Name) {
+			outFile, err := os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY, 0755)
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(outFile, tarReader)
+			outFile.Close()
+			if err != nil {
+				return err
+			}
+			extacted = true
+		}
+	}
+}
+
+var tgzFileRe = regexp.MustCompile(`^(.*)\.(tar\.gz)|tgz$`)
+
 func publishVersion(rc *RunConfig, tag string, assets []*github.ReleaseAsset) error {
-	version := strings.TrimPrefix(tag, "v")
+	versionParts := strings.Split(tag, "/")
+	version := strings.TrimPrefix(versionParts[len(versionParts)-1], "v")
 	if !rc.publish {
 		log.Println("THIS IS A DRY RUN!!! (not really publishing anything)")
 	}
@@ -102,17 +148,32 @@ func publishVersion(rc *RunConfig, tag string, assets []*github.ReleaseAsset) er
 		return err
 	}
 	for _, asset := range assets {
-		log.Printf("--> downloading %s", asset.GetName())
+		assetName := asset.GetName()
+		if assetName == "checksums.txt" {
+			continue
+		}
+		log.Printf("--> downloading %s", assetName)
 		req, err := grab.NewRequest(binDir, asset.GetBrowserDownloadURL())
 		if err != nil {
 			return err
 		}
 		res := grab.DefaultClient.Do(req)
-		showDownloadProgressBar(asset.GetName(), res)
+		showDownloadProgressBar(assetName, res)
 		if err := res.Err(); err != nil {
 			return err
 		}
-		if err := os.Chmod(res.Filename, 0755); err != nil {
+		tgzFileMatch := tgzFileRe.FindAllStringSubmatch(assetName, -1)
+		if len(tgzFileMatch) == 1 && len(tgzFileMatch[0]) == 3 {
+			extractedAssetName := tgzFileMatch[0][1]
+			log.Printf("--> extracting %s to %s", assetName, extractedAssetName)
+			err = extractFileFromTar(rc, res.Filename, path.Join(binDir, extractedAssetName))
+			if err != nil {
+				return err
+			}
+			if err := os.Remove(res.Filename); err != nil {
+				return err
+			}
+		} else if err := os.Chmod(res.Filename, 0755); err != nil {
 			return err
 		}
 	}
