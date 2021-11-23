@@ -1,0 +1,8 @@
+{
+  "Owner": "kubernetes-sigs",
+  "Repo": "kustomize",
+  "Name": "kustomize",
+  "License": "Apache-2.0",
+  "Homepage": "https://kustomize.io",
+  "NoPrefixForMainPackage": true
+}
