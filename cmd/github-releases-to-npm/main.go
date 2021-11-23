@@ -90,6 +90,7 @@ type RunConfig struct {
 	Name, License, Homepage string
 	tag                     string
 	publish                 bool
+	NoPrefixForMainPackage  bool
 }
 
 func extractFileFromTar(rc *RunConfig, inputFile, outputFile string) error {
@@ -184,6 +185,9 @@ func publishVersion(rc *RunConfig, tag string, assets []*github.ReleaseAsset) er
 		"--homepage", rc.Homepage,
 		"--repository", fmt.Sprintf("github:%s/%s", rc.Owner, rc.Repo),
 		"--package-name-prefix", "@install-binary/",
+	}
+	if rc.NoPrefixForMainPackage {
+		args = append(args, "--no-prefix-for-main-package")
 	}
 	if rc.publish {
 		args = append(args, "--publish")
