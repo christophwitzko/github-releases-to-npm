@@ -1,6 +1,6 @@
 FROM golang:1.17
 
-RUN go get github.com/mitchellh/gox
+RUN go install github.com/mitchellh/gox@latest
 
 WORKDIR /build
 COPY ./build.sh /build
