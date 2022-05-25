@@ -1,6 +1,6 @@
 module github-releases-to-npm
 
-go 1.17
+go 1.18
 
 require (
 	github.com/cavaliercoder/grab v1.0.1-0.20210912125936-718223ba0a5a
